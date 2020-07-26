@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useReducer } from 'react'
+import React, { useMemo, useRef, useState, useReducer, useEffect } from 'react'
 import { Overlay } from 'react-overlays'
 
 import { Post } from '../../models'
@@ -9,6 +9,8 @@ import Files from './files'
 
 import * as styles from './post.css'
 import { AlbumFile } from '../../models'
+
+import { useOutsideClick } from '../../../components/hooks'
 
 import {
   EmojiNameKind,
@@ -70,28 +72,32 @@ const InReplyTo: React.FC<{
 
   const container = useRef<HTMLDivElement>(null)
   const trigger = useRef<HTMLAnchorElement>(null)
+
   const [showState, dispatch] = useReducer(
     (
-      state: 'closed' | 'hovered' | 'locked',
-      action: 'click' | 'rootClose' | 'mouseEnter' | 'mouseLeave'
+      state: { show: boolean; lock: boolean },
+      action: 'click' | 'close' | 'mouseEnter' | 'mouseLeave'
     ) => {
       switch (action) {
         case 'click':
-          if (state === 'locked') return 'closed'
-          return 'locked'
-        case 'rootClose':
-          if (state !== 'hovered') return 'closed'
+          if (state.lock) return { show: false, lock: false }
+          if (state.show) return { ...state, lock: true }
           return state
+        case 'close':
+          return { show: false, lock: false }
         case 'mouseEnter':
-          if (state === 'closed') return 'hovered'
-          return state
+          if (!state.lock) return
+          return { show: true, lock: false }
         case 'mouseLeave':
-          if (state === 'hovered') return 'closed'
-          return state
+          if (state.lock) return state
+          return { show: false, lock: false }
       }
     },
     'closed'
   )
+
+  useOutsideClick(container, () => dispatch('close'))
+
   return (
     <div
       ref={container}
@@ -117,7 +123,7 @@ const InReplyTo: React.FC<{
         target={trigger}
         show={showState !== 'closed'}
         placement="top-start"
-        rootClose={showState === 'locked'}
+        rootClose={false}
         onHide={() => dispatch('rootClose')}
       >
         {({ props }) => (
