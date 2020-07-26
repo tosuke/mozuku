@@ -121,7 +121,7 @@ const InReplyTo: React.FC<{
       <Overlay
         container={container}
         target={trigger}
-        show={showState !== 'closed'}
+        show={showState.show}
         placement="top-start"
         rootClose={false}
         onHide={() => dispatch('rootClose')}
